@@ -117,8 +117,7 @@ void setup() {
 
   tft.print(F("Syncing time with RTC.."));
 
-  DateTime time = RTC.now();
-  setTime(time.unixtime());
+
 
   tft.println(F("Done."));
 
