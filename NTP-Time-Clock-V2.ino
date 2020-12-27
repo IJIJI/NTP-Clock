@@ -58,8 +58,13 @@ bool ethernetConnected = false;
 bool lastEthernetConnected = false;
 bool gettingTime = false;
 bool lastGettingTime = false;
-unsigned long gotLastTime = 0;
+unsigned long gettingLastTime = 0;
+
 unsigned long lastMaintain;
+
+unsigned long updateMoment = 0;
+bool updateNeeded = false;
+unsigned long NTPTime = 0;
 
 struct lastTimes {
   byte sec;
@@ -141,6 +146,11 @@ void setup() {
 
 void loop(){
 
+  // if (millis() > 300000 && lastGettingTime < 300000 && !gettingTime){
+  //   sendNTPpacket(timeServer);
+  // }
+
+
   if (ethernetConnected) {
  
     adjustTime();
@@ -164,7 +174,9 @@ void loop(){
     
     if (ethernetConnected){
       // tft.fillScreen(TFT_YELLOW);
-      sendNTPpacket(timeServer);
+      if (gettingLastTime + 1500 < millis()){
+        sendNTPpacket(timeServer);
+      }
     }
     else {
       // connectEthernetPrint(true);
@@ -219,7 +231,7 @@ void adjustTime() {
     // combine the four bytes (two words) into a long integer
     // this is NTP time (seconds since Jan 1 1900):
     unsigned long secsSince1900 = highWord << 16 | lowWord;
-    unsigned long NTPTime = secsSince1900 - 2208988800UL + 3600; // make ntc time from 1970 and add one hour for timezone.
+    NTPTime = secsSince1900 - 2208988800UL + 3600; // make ntc time from 1970 and add one hour for timezone.
 
 
     // Now get the fractional part
@@ -232,12 +244,18 @@ void adjustTime() {
     NTPTime++;  
 
     // Burn off the remaining fractional part of the existing second
-    delay(1000 - NTPMillis);
+    updateMoment = millis() + 1000 - NTPMillis;
+    updateNeeded = true;
+
+
+  }
+
+  if (updateNeeded && millis() > updateMoment){
 
     RTC.adjust(NTPTime);
-    setTime(NTPTime);
+    // setTime(NTPTime);
 
-    // tft.fillScreen(TFT_YELLOW);
+    updateNeeded = false;
     gettingTime = false;
   }
 
@@ -266,6 +284,7 @@ void sendNTPpacket(const char * address) {
   ntpUDP.endPacket();
 
   gettingTime = true;
+  gettingLastTime = millis();
 }
 
 int connectEthernet() {
@@ -415,9 +434,9 @@ void checkUpdate(time_t time){
 
     lastGettingTime = gettingTime;
     
-    gotLastTime = millis();
+    
   }
-  else if (lastGettingTime != gettingTime && gotLastTime + 1500 < millis()){
+  else if (lastGettingTime != gettingTime && gettingLastTime + 1500 < millis()){
     // tft.setTextColor(TFT_WHITE, TFT_BLACK);
     // tft.setTextSize(1);
     // tft.setCursor(135,115);
