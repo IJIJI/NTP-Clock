@@ -112,9 +112,6 @@ void setup() {
 
   tft.print(F("Syncing time with RTC.."));
 
-  DateTime time = RTC.now();
-  setTime(time.unixtime());
-
   tft.println(F("Done."));
 
 
@@ -235,7 +232,6 @@ void adjustTime() {
     delay(1000 - NTPMillis);
 
     RTC.adjust(NTPTime);
-    setTime(NTPTime);
 
     // tft.fillScreen(TFT_YELLOW);
     gettingTime = false;
